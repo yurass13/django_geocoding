@@ -1,6 +1,4 @@
-from typing import Any, Dict, List, Optional
-
-import csv
+from typing import Dict, List
 
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import JSONParser
@@ -28,6 +26,8 @@ def address_post(request):
     data: List[Dict] = []
     errors: List[Dict] = []
 
+    # NOTE CsvUploadParser
+    # :returns {address:[Dict[CSV_HEADER_FIELD, Value]]}: - that's equal default JSON format.
     if isinstance(request.data['address'], dict):
         # JSON single address
         data = [request.data['address']]

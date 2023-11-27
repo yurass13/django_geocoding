@@ -7,9 +7,10 @@ class CsvUploadParser(BaseParser):
     """
     media_type = 'text/csv'
 
-    def parse(self, stream, media_type=None, parser_context=None) -> List[Dict]:
+    def parse(self, stream, media_type=None, parser_context=None) -> Dict:
         """Decode to utf-8, create dataset List[Dict] and return.
         :return: {'address': $dataset}
+        # TODO handling errors
         """
         data = stream.read().decode('utf-8')
 
