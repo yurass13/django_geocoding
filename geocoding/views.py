@@ -38,6 +38,10 @@ def address_post(request):
     # Validation
 
     for item in data:
+        # TODO handling for set default value
+        if item['foundation_year'] == '':
+            del item['foundation_year']
+
         serializer = AddressSerializer(data=item)
         logging.info("before validation")
         if serializer.is_valid():
@@ -61,7 +65,7 @@ def address_post(request):
     elif len(errors) > 0:
         response_data = {'status': 'with errors',
                          'total': len(data),
-                         'updated': len(errors),
+                         'updated': len(data) - len(errors),
                          'errors': errors}
         return Response(data=response_data,
                         status=status.HTTP_206_PARTIAL_CONTENT)
