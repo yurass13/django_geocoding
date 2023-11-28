@@ -1,6 +1,9 @@
 import os
 import logging
+
+from dadata import Dadata
 from pathlib import Path
+
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +24,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'drf_spectacular',
+    'map.apps.MapConfig',
     'geocoding.apps.GeocodingConfig',
+    'django.contrib.postgres',
 ]
 
 MIDDLEWARE = [
@@ -59,6 +65,10 @@ DATABASES = {
     'default': {
         "ENGINE": os.environ.get("SQL_ENGINE", "django.db.backends.sqlite3"),
         "NAME": os.environ.get("SQL_DATABASE", BASE_DIR / "db.sqlite3"),
+        "USER": os.environ.get("SQL_USER", "user"),
+        "PASSWORD": os.environ.get("SQL_PASSWORD", "password"),
+        "HOST": os.environ.get("SQL_HOST", "localhost"),
+        "PORT": os.environ.get("SQL_PORT", "5432"),
     }
 }
 
@@ -86,6 +96,7 @@ USE_L10N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -94,7 +105,7 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{name} {levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'format': '{levelname} {name} {asctime} {module} {process:d} {thread:d} {message}',
             'style': '{',
         },
         'simple': {
@@ -103,13 +114,13 @@ LOGGING = {
         },
     },
     'handlers': {
-        'console': {
+        'debug': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
+            'formatter': 'simple',
         },
-        'file': {
-            'level': 'WARNING',
+        'general': {
+            'level': 'INFO',
             'class': 'logging.FileHandler',
             'filename': 'general.log',
             'formatter': 'verbose',
@@ -117,9 +128,12 @@ LOGGING = {
     },
     'loggers': {
         '': {
-            'handlers': ['console', 'file'],
+            'handlers': ['debug', 'general'] if DEBUG else ['general'],
             'level': 'DEBUG',
             'propagate': True,
         },
     },
 }
+
+# DADATA SECRETS
+DADATA_CLIENT = Dadata(os.environ.get('DADATA_API_TOKEN'), os.environ.get('DADATA_API_SECRET'))
