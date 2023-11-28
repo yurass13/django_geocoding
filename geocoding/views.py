@@ -8,7 +8,6 @@ from rest_framework.response import Response
 from .parsers import CsvUploadParser
 from .serializers import AddressSerializer
 
-
 import logging
 
 logging.getLogger(__name__)
@@ -17,30 +16,32 @@ logging.getLogger(__name__)
 @api_view(['POST'])
 @parser_classes([JSONParser, CsvUploadParser])
 def address_post(request):
+    # NOTE CsvUploadParser
+    # :returns {address:[Dict[CSV_HEADER_FIELD, Value]]}: - that's equal default JSON formatter.
+
     # Get request data
     if "address" not in request.data:
         return Response(data={'status': 'error',
                               'message': "Expect key: 'address' - Address or list of Address or csv file!"},
                         status=status.HTTP_400_BAD_REQUEST)
 
-    data: List[Dict] = []
     errors: List[Dict] = []
 
-    # NOTE CsvUploadParser
-    # :returns {address:[Dict[CSV_HEADER_FIELD, Value]]}: - that's equal default JSON format.
-    if isinstance(request.data['address'], dict):
-        # JSON single address
-        data = [request.data['address']]
-    elif isinstance(request.data['address'], list):
-        # JSON list of address
-        data = request.data['address']
+    addresses = request.data['address']
+
+    # All to list of Dict:AddressPrototype
+    if isinstance(addresses, dict):
+        addresses = [addresses]
 
     # Validation
-
-    for item in data:
-        # TODO handling for set default value
-        if item['foundation_year'] == '':
-            del item['foundation_year']
+    # TODO serializer(many=True)
+    # serializer = AddressSerializer(data=addresses, many=True)
+    # serializer.is_valid()
+    for item in addresses:
+        # NOTE hardcoded. Need refactor with serializer(many=True)
+        for key in item:
+            if item[key] == '':
+                item[key] = None
 
         serializer = AddressSerializer(data=item)
         logging.info("before validation")
@@ -55,22 +56,22 @@ def address_post(request):
             errors.append(error)
 
     # Standard response cases
-    if len(errors) == len(data):
-        response_data = {'status': 'invalid data',
-                         'total': len(data),
-                         'updated': 0,
-                         'errors': errors}
-        return Response(data=response_data,
-                        status=status.HTTP_400_BAD_REQUEST)
+    response_data = {'status': '',
+                     'total': len(addresses),
+                     'updated': 0,
+                     'errors': errors}
+    if len(errors) == len(addresses):
+        response_data['status'] = 'invalid data'
+        response_status = status.HTTP_400_BAD_REQUEST
     elif len(errors) > 0:
-        response_data = {'status': 'with errors',
-                         'total': len(data),
-                         'updated': len(data) - len(errors),
-                         'errors': errors}
-        return Response(data=response_data,
-                        status=status.HTTP_206_PARTIAL_CONTENT)
+        response_data['status'] = 'with errors'
+        response_data['updated'] = len(addresses) - len(errors)
+        response_status = status.HTTP_206_PARTIAL_CONTENT
     else:
-        response_data = {'status': 'ok',
-                         'total': len(data)}
-        return Response(data=response_data,
-                        status=status.HTTP_201_CREATED)
+        response_data['status'] = 'ok'
+        del response_data['updated']
+        del response_data['errors']
+        response_status = status.HTTP_200_OK
+
+    return Response(data=response_data,
+                    status=response_status)

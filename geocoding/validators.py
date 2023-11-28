@@ -1,8 +1,13 @@
 from django.core.validators import ValidationError
 from datetime import datetime
 
+from typing import Optional
 
-def validate_foundation_year(value: str | int) -> int:
+
+def validate_foundation_year(value: str | int) -> Optional[int]:
+    if value is None:
+        return value
+
     try:
         value = int(value)
 
@@ -17,7 +22,10 @@ def validate_foundation_year(value: str | int) -> int:
         raise ValidationError(f"Expected a year of foundation, but got {value}:{type(value)}!")
 
 
-def validate_population(value: str | int) -> int:
+def validate_population(value: Optional[str | int]) -> Optional[int]:
+    if value is None:
+        return value
+
     try:
         value = int(value)
 

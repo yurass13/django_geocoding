@@ -28,33 +28,34 @@ class Address(models.Model):
         CENTRAL_AREA = 4
 
     address = models.CharField(max_length=500)
-    postal_code = models.CharField(max_length=6, blank=True)
+    postal_code = models.CharField(max_length=6, null=True, default=None)
     country = models.CharField(max_length=120)
     federal_district = models.CharField(max_length=20)
     region_type = models.CharField(max_length=10)
     region = models.CharField(max_length=120)
-    area_type = models.CharField(max_length=10, blank=True)
-    area = models.CharField(max_length=255, blank=True)
-    city_type = models.CharField(max_length=10, blank=True)
-    city = models.CharField(max_length=120, blank=True)
-    settlement_type = models.CharField(max_length=10, blank=True)
-    settlement = models.CharField(max_length=120, blank=True)
+    area_type = models.CharField(max_length=10, null=True, default=None)
+    area = models.CharField(max_length=255, null=True, default=None)
+    city_type = models.CharField(max_length=10, null=True, default=None)
+    city = models.CharField(max_length=120, null=True, default=None)
+    settlement_type = models.CharField(max_length=10, null=True, default=None)
+    settlement = models.CharField(max_length=120, null=True, default=None)
     kladr_id = models.CharField(max_length=19)
     fias_id = models.CharField(max_length=36, unique=True)
     fias_level = models.IntegerField(choices=FiasLevel.choices,
                                      default=FiasLevel.FOREIGN_OR_EMPTY)
     capital_marker = models.IntegerField(choices=CapitalMarker.choices,
                                          default=CapitalMarker.OTHER)
-    okato = models.CharField(max_length=11, blank=True)
-    oktmo = models.CharField(max_length=11, blank=True)
-    tax_office = models.CharField(max_length=4, blank=True)
-    timezone = models.CharField(max_length=50, blank=True)
+    okato = models.CharField(max_length=11, null=True, default=None)
+    oktmo = models.CharField(max_length=11, null=True, default=None)
+    tax_office = models.CharField(max_length=4, null=True, default=None)
+    timezone = models.CharField(max_length=50, null=True, default=None)
     geo_lat = models.FloatField(max_length=12)
     geo_lon = models.FloatField(max_length=12)
-    population = models.IntegerField(default=0,
-                                     validators=[
-                                         validate_population
-                                     ])
+    population = models.BigIntegerField(null=True,
+                                        default=None,
+                                        validators=[
+                                             validate_population
+                                        ])
     foundation_year = models.IntegerField(null=True,
                                           default=None,
                                           validators=[
