@@ -2,6 +2,6 @@ Django==4.2.7
 djangorestframework==3.14.0
 drf-spectacular==0.26.5
 folium==0.15.0
-dadata==21.10.1
 celery==5.3.6
+dadata==21.10.1
 psycopg2==2.9.9
