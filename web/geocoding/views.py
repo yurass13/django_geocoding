@@ -6,11 +6,12 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
+from django.core.validators import ValidationError
 
 from .parsers import CsvUploadParser
 from .serializers import AddressSerializer
 from .models import Address
-from  .forms import SearchForm
+from .forms import SearchForm
 
 from project.settings import DADATA_CLIENT
 
@@ -122,21 +123,36 @@ def get_clean_address(request):
     if address['qc'] == 0 or ((address['qc'] == 3 or address['qc'] == 1) and request.data['force']):
         # All ok or User apply force for ignore warnings
         serializer = AddressSerializer(data=address)
-
+        response_data = None
         if serializer.is_valid():
             # Create objects
             serializer.save()
             logging.debug({'OBJECT_SAVED': {'type': 'Address',
                                             'data': serializer.validated_data}})
-            return Response(data={'status': 'ok',
-                                  'address': serializer.validated_data},
-                            status=status.HTTP_201_CREATED)
+            response_data = serializer.validated_data
+            status_code = status.HTTP_201_CREATED
         else:
-            # TODO IMPORTANT handling
-            logging.error({'INTEGRATION_ERROR': {'comment': "get valid response from DaData but data is invalid",
-                                                 'data': address,
-                                                 'errors': serializer.errors},
-                           'tag': 'IMPORTANT'})
+            logging.debug({"FROM_DADATA_VALIDATION_FAILED": serializer.errors})
+
+            if serializer.errors:
+                logging.debug({"FROM DADATA VALIDATION FAILED"})
+                response_data = address
+                status_code = status.HTTP_200_OK
+            else:
+                # TODO IMPORTANT handling
+                logging.error({'INTEGRATION_ERROR': {'comment': "get valid response from DaData but data is invalid",
+                                                     'data': address,
+                                                     'errors': serializer.errors},
+                               'tag': 'IMPORTANT'})
+                # ERROR response
+                return Response(data={'status': 'error',
+                                      'message': 'no response from related server'},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # OK response
+        return Response(data={'status': 'ok',
+                              'address': response_data},
+                        status=status_code)
+
     elif address['qc'] == 2:
         return Response(data={'status': 'error',
                               'message': 'Empty or trash data!'},

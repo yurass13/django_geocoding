@@ -60,7 +60,7 @@ class Address(models.Model):
                                           validators=[
                                               validate_foundation_year
                                           ])
-    location = models.PointField(null=True, default=None)
+    location = models.PointField(null=True, default=None, srid=4326)
 
     class Meta:
         indexes = [
