@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from django.contrib.gis.geos import Point
+
 from .models import Address
 
 
@@ -30,6 +32,15 @@ class AddressSerializer(serializers.ModelSerializer):
             'geo_lat',
             'geo_lon',
             'population',
-            'foundation_year',
-            'location'
+            'foundation_year'
         ]
+
+    def create(self, validated_data):
+        prototype = validated_data
+
+        # location processing
+        if prototype.get('geo_lat', None) is not None and prototype.get('geo_lon', None) is not None:
+            prototype['location'] = Point(float(prototype['geo_lat']), float(prototype['geo_lon']))
+
+        address = Address.objects.create(**prototype)
+        return address

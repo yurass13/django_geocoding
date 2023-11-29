@@ -6,7 +6,6 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
-from django.contrib.gis.geos import Point
 
 from .parsers import CsvUploadParser
 from .serializers import AddressSerializer
@@ -49,10 +48,6 @@ def address_post(request):
         for key in item:
             if item[key] == '':
                 item[key] = None
-
-        # Postgis Point init
-        if item.get('geo_lat', None) is not None and item.get('geo_lon', None) is not None:
-            item['location'] = Point(float(item['geo_lat']), float(item['geo_lon']))
 
         serializer = AddressSerializer(data=item)
         if serializer.is_valid():
@@ -116,9 +111,6 @@ def get_clean_address(request):
     address = DADATA_CLIENT.clean(name="address", source=request.data['query'])
     if 'result' in address:
         address['address'] = address['result']
-    # location processing
-    if address.get('geo_lat', None) is not None and address.get('geo_lon', None) is not None:
-        address['location'] = Point(float(address['geo_lat']), float(address['geo_lon']))
 
     if 'qc' not in address:
         # TODO for handling API errors need more info!
