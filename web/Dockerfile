@@ -10,7 +10,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 RUN apk update \
-    && apk add postgresql-dev gcc python3-dev musl-dev
+    && apk add --no-cache postgresql-dev gcc python3-dev musl-dev
 
 RUN pip install --upgrade pip
 COPY . .
@@ -28,6 +28,19 @@ RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requir
 
 FROM python:3.10-alpine
 
+# INSTALL GEOS
+RUN apk add --no-cache binutils
+RUN apk add --no-cache proj
+RUN apk add --no-cache gdal
+RUN apk add --no-cache geos
+
+RUN ln -s /usr/lib/libproj.so.25 /usr/lib/libproj.so \
+    && ln -s /usr/lib/libgdal.so.32 /usr/lib/libgdal.so \
+    && ln -s /usr/lib/libgeos_c.so.1 /usr/lib/libgeos_c.so
+
+
+
+
 RUN mkdir -p /home/app/
 
 RUN addgroup -S app && adduser -S app -G app
@@ -44,6 +57,9 @@ RUN apk update && apk add libpq
 COPY --from=builder /usr/src/app/wheels /wheels
 COPY --from=builder /usr/src/app/requirements.txt .
 RUN pip install --no-cache /wheels/*
+
+ENV LD_LIBRARY_PATH=/usr/local/lib
+RUN echo /usr/local/lib >> /etc/ld.so.conf
 
 COPY . $APP_HOME
 

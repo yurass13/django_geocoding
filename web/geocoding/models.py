@@ -1,5 +1,4 @@
-from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.gis.db import models
 from .validators import validate_foundation_year, validate_population
 
 
@@ -61,6 +60,7 @@ class Address(models.Model):
                                           validators=[
                                               validate_foundation_year
                                           ])
+    location = models.PointField(null=True, default=None)
 
     class Meta:
         indexes = [

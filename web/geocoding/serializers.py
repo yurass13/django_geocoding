@@ -31,4 +31,5 @@ class AddressSerializer(serializers.ModelSerializer):
             'geo_lon',
             'population',
             'foundation_year',
+            'location'
         ]

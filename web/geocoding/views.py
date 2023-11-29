@@ -5,8 +5,13 @@ from rest_framework.parsers import JSONParser
 from rest_framework import status
 from rest_framework.response import Response
 
+from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
+from django.contrib.gis.geos import Point
+
 from .parsers import CsvUploadParser
 from .serializers import AddressSerializer
+from .models import Address
+from  .forms import SearchForm
 
 from project.settings import DADATA_CLIENT
 
@@ -45,8 +50,11 @@ def address_post(request):
             if item[key] == '':
                 item[key] = None
 
+        # Postgis Point init
+        if item.get('geo_lat', None) is not None and item.get('geo_lon', None) is not None:
+            item['location'] = Point(float(item['geo_lat']), float(item['geo_lon']))
+
         serializer = AddressSerializer(data=item)
-        logging.info("before validation")
         if serializer.is_valid():
             # Create objects
             serializer.save()
@@ -108,6 +116,9 @@ def get_clean_address(request):
     address = DADATA_CLIENT.clean(name="address", source=request.data['query'])
     if 'result' in address:
         address['address'] = address['result']
+    # location processing
+    if address.get('geo_lat', None) is not None and address.get('geo_lon', None) is not None:
+        address['location'] = Point(float(address['geo_lat']), float(address['geo_lon']))
 
     if 'qc' not in address:
         # TODO for handling API errors need more info!
@@ -156,5 +167,15 @@ def get_clean_address(request):
 
 
 @api_view(['GET'])
-def search_address(request, query: str):
-    pass
+def search_address(request):
+    """TODO Optimize in future."""
+    if 'query' in request.GET:
+        form = SearchForm(request.GET)
+        if form.is_valid():
+            query = form.cleaned_data['query']
+
+            search_result = Address.objects.annotate(
+                rank=SearchRank(SearchVector('address', config='russian'),
+                                SearchQuery(query, config='russian'))).filter(rank__gte=0.3).order_by("-rank")[:5]
+            return Response(data=AddressSerializer(search_result, many=True).data,
+                            status=status.HTTP_200_OK)

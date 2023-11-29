@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.gis',
     'rest_framework',
     'drf_spectacular',
     'map.apps.MapConfig',
@@ -63,7 +64,7 @@ WSGI_APPLICATION = 'project.wsgi.application'
 
 DATABASES = {
     'default': {
-        "ENGINE": os.environ.get("SQL_ENGINE", "django.db.backends.sqlite3"),
+        "ENGINE": os.environ.get("SQL_ENGINE", "django.db.backends.postgresql"),
         "NAME": os.environ.get("SQL_DATABASE", BASE_DIR / "db.sqlite3"),
         "USER": os.environ.get("SQL_USER", "user"),
         "PASSWORD": os.environ.get("SQL_PASSWORD", "password"),
@@ -137,3 +138,5 @@ LOGGING = {
 
 # DADATA SECRETS
 DADATA_CLIENT = Dadata(os.environ.get('DADATA_API_TOKEN'), os.environ.get('DADATA_API_SECRET'))
+
+GDAL_LIBRARY_PATH = '/usr/lib/libgdal.so'

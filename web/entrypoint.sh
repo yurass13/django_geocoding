@@ -1,5 +1,9 @@
 #!/bin/sh
 
+
+echo "Collect static files"
+python3 manage.py collectstatic --noinput
+
 if [ "$DATABASE" = "postgres" ]
 then
     echo "Waiting for postgres..."
@@ -10,10 +14,8 @@ then
 
     echo "PostgreSQL started"
 fi
-echo "Collect static files"
-python manage.py collectstatic --noinput
 
 echo "Apply database migrations"
-python manage.py migrate
+python3 manage.py migrate
 
 exec "$@"
