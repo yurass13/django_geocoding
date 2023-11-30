@@ -5,7 +5,7 @@ from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
 from django.shortcuts import redirect, render, reverse
 
-from geocoding.models import Address
+from apps.geocoding.models import Address
 
 from .forms import SearchAddress
 from .utils import get_html_map
@@ -25,7 +25,7 @@ def maps(request):
             data = json.dumps({'query': form.cleaned_data['address']})
             logging.debug({"TO_CLEAN": data})
             headers = {'Content-Type': 'application/json'}
-            response = requests.post('http://' + request.get_host() + reverse('geocoding:address_clean'),
+            response = requests.post('http://' + request.get_host() + reverse('apps.geocoding:address_clean'),
                                      data=data,
                                      headers=headers)
             logging.debug({'FROM_ADDRESS_CLEAN': response.content})

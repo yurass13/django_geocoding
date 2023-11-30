@@ -6,7 +6,6 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
-from django.core.validators import ValidationError
 
 from .parsers import CsvUploadParser
 from .serializers import AddressSerializer
@@ -103,7 +102,7 @@ def get_clean_address(request):
 
     if request.data['query'].strip() == '':
         return Response(data={'status': 'error',
-                              'message': f"Expect address but got empty string!",
+                              'message': "Expect address but got empty string!",
                               },
                         status=status.HTTP_400_BAD_REQUEST)
 

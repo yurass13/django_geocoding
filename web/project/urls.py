@@ -4,6 +4,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('map.urls', namespace='map')),
-    path('geocoding/api/v1/', include('geocoding.urls', namespace='geocoding')),
+    path('', include('apps.map.urls', namespace='apps.map')),
+    path('geocoding/api/v1/', include('apps.geocoding.urls', namespace='apps.geocoding')),
 ]

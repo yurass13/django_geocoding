@@ -1,6 +1,5 @@
 #!/bin/sh
 
-
 echo "Collect static files"
 python3 manage.py collectstatic --noinput
 
