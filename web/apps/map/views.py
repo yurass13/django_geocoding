@@ -31,21 +31,21 @@ def maps(request):
             response = requests.post('http://' + request.get_host() + reverse('apps.geocoding:address_clean'),
                                      data=data,
                                      headers=headers)
-            logging.debug({'FROM_ADDRESS_CLEAN': response.content})
+            data = json.loads(response.content)
+            logging.debug({'FROM_ADDRESS_CLEAN': data})
 
             # API response handling
             if response.status_code in [200, 201]:
-                data = json.loads(response.content)
-                map_config['target'] = (data['address']['address'],
-                                        data['address']['geo_lat'],
-                                        data['address']['geo_lon'],
+                map_config['target'] = (data['address'],
+                                        data['geo_lat'],
+                                        data['geo_lon'],
                                         int(form.cleaned_data['radius']) * 1000)
 
                 # Get Markers
                 # NOTE Not optimal
                 # TODO need create polygon area and check address.location in area (need tests)
-                current_point = Point(x=float(data['address']['geo_lat']),
-                                      y=float(data['address']['geo_lon']),
+                current_point = Point(x=float(data['geo_lat']),
+                                      y=float(data['geo_lon']),
                                       srid=4326)
 
                 address_qs = Address.objects.annotate(distance=Distance('location', current_point)).\

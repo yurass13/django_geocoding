@@ -6,10 +6,10 @@ from rest_framework.parsers import JSONParser
 from rest_framework import status
 from rest_framework.response import Response
 
-from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
+from project.settings import DADATA_CLIENT
+
 
 from .forms import SearchForm
-from .models import Address
 from .parsers import CsvUploadParser
 from .serializers import AddressSerializer
 from .services import parse_dadata_response
@@ -18,6 +18,7 @@ from .errors import (RequestEmptyError,
                      ResponseEmptyError,
                      DadataResponseHandlingError,
                      RequestNotObviousWarning)
+
 
 import logging
 
@@ -146,7 +147,7 @@ def get_clean_address(request):
         # TODO before request - check cache and search in DB
         form = SearchForm(request.data)
         if form.is_valid():
-            address = DADATA_CLIENT.clean(name="address", source=form.cleaned_data['query'])    # noqa: F821
+            address = DADATA_CLIENT.clean(name="address", source=form.cleaned_data['query'])
 
             force = True if request.data.get('force', 'false') == 'true' else False
             return Response(**parse_dadata_response(address, force))

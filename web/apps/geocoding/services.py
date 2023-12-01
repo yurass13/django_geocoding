@@ -28,6 +28,10 @@ def parse_dadata_response(address, force: bool = False) -> Dict[Union[Literal["d
         raise ResponseEmptyError()
 
     if address['qc'] == 0 or ((address['qc'] == 3 or address['qc'] == 1) and force):
+
+        # NOTE Format fix before validation
+        address['address'] = address['result']
+
         # All ok or User apply force for ignore warnings
         serializer = AddressSerializer(data=address)
         if serializer.is_valid():
