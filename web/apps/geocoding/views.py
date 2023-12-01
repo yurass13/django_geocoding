@@ -169,18 +169,3 @@ def get_clean_address(request):
         return BadRequestErrorResponse(message=str(error))
     except (RequestNotObviousWarning, ) as warning:
         return BadRequestErrorResponse(message=str(warning))
-
-
-@api_view(['GET'])
-def search_address(request):
-    """TODO Optimize in future."""
-    if 'query' in request.GET:
-        form = SearchForm(request.GET)
-        if form.is_valid():
-            query = form.cleaned_data['query']
-
-            search_result = Address.objects.annotate(
-                rank=SearchRank(SearchVector('address', config='russian'),
-                                SearchQuery(query, config='russian'))).filter(rank__gte=0.3).order_by("-rank")[:5]
-            return Response(data=AddressSerializer(search_result, many=True).data,
-                            status=status.HTTP_200_OK)
