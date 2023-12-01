@@ -1,3 +1,4 @@
+"""Map utils"""
 from typing import List, Optional, Tuple
 
 import folium
@@ -53,4 +54,4 @@ def get_html_map(target: Optional[MarkerModel] = None,
         for city in cities:
             folium.Marker(location=(city[LAT], city[LON]), popup=city[LABEL], lazy=True).add_to(cities_group)
 
-    return map_obj._repr_html_()
+    return map_obj._repr_html_()    # type: ignore

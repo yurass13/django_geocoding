@@ -1,8 +1,10 @@
+"""Project Settings"""
 import os
 import logging
 
-from dadata import Dadata
 from pathlib import Path
+
+from dadata import Dadata
 
 
 logger = logging.getLogger(__name__)

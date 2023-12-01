@@ -1,10 +1,26 @@
+"""Geocoding models"""
 from django.contrib.gis.db import models
 from .validators import validate_foundation_year, validate_population
 
 
 class Address(models.Model):
-
+    """Address model class.
+    Unique fields:
+        id: pk
+        fias_id: unique
+    Indexes:
+        postal_code
+        country
+        city
+        kladr_id
+        fias_id
+        okato
+        oktmo
+        geo_lat
+        geo_lon
+    """
     class FiasLevel(models.Choices):
+        """FiasLevel choices"""
         COUNTRY = 0
         REGION = 1
         AREA = 3
@@ -20,6 +36,7 @@ class Address(models.Model):
         FOREIGN_OR_EMPTY = -1
 
     class CapitalMarker(models.Choices):
+        """CapitalMarker choices"""
         OTHER = 0
         AREA_CENTER = 1
         REGION_CENTER = 2
@@ -53,7 +70,7 @@ class Address(models.Model):
     population = models.BigIntegerField(null=True,
                                         default=None,
                                         validators=[
-                                             validate_population
+                                            validate_population
                                         ])
     foundation_year = models.IntegerField(null=True,
                                           default=None,

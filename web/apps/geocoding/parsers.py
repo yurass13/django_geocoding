@@ -1,8 +1,10 @@
-from rest_framework.parsers import BaseParser
-from typing import Optional, List, Dict
-
+"""Geocoding parsers"""
 import csv
 import io
+
+from typing import Optional, List, Dict
+
+from rest_framework.parsers import BaseParser
 
 
 class CsvUploadParser(BaseParser):

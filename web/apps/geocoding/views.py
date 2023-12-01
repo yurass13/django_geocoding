@@ -1,3 +1,4 @@
+"""Geocoding views"""
 from typing import Dict, List
 
 from rest_framework.decorators import api_view, parser_classes
@@ -7,28 +8,76 @@ from rest_framework.response import Response
 
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
 
+from .forms import SearchForm
+from .models import Address
 from .parsers import CsvUploadParser
 from .serializers import AddressSerializer
-from .models import Address
-from .forms import SearchForm
+from .services import parse_dadata_response
 
-from project.settings import DADATA_CLIENT
+from .errors import (RequestEmptyError,
+                     ResponseEmptyError,
+                     DadataResponseHandlingError,
+                     RequestNotObviousWarning)
 
 import logging
 
 logging.getLogger(__name__)
 
 
+class BadRequestErrorResponse(Response):
+    """Base class for HTTP_400_BAD_REQUEST."""
+    def __init__(self, message: str = "BadRequest", *args, **kwargs):
+        super().__init__(data={'status': 'error',
+                               'message': message},
+                         status=status.HTTP_400_BAD_REQUEST,
+                         *args,
+                         **kwargs)
+
+
 @api_view(['POST'])
 @parser_classes([JSONParser, CsvUploadParser])
 def address_post(request):
+    """
+    :param request:
+        ContentType: application/json | text/csv
+        Data: JSON with key "address" or stream of csv data.
+    :returns HttpJsonResponse:
+        Valid Response Template:
+            Status Codes:
+                HTTP_200_OK:                All data ok.
+                HTTP_206_PARTIAL_CONTENT:   Data has invalid rows.
+                HTTP_400_BAD_REQUEST:       All data invalid.
+            Data:
+                {
+                    "status": Union["ok", "with errors", "invalid data"],
+                    "total": int,
+                    "updated": int,
+                    "errors": [
+                        {
+                            "INVALID_DATA": {"field_name": ["error messages", ]},
+                            "address": {"Address.field": "value"}
+                        }
+                    ]
+                }
+
+        Invalid Response Template:
+            Status Code:
+                HTTP_400_BAD_REQUEST
+            Reason:
+                Request must contain "address" key.
+            Data:
+                {
+                    "status": "error",
+                    "message": "Expect key: "address" - Address or list of Address or csv file!"
+                }
+    """
     # NOTE CsvUploadParser
     # :returns {address:[Dict[CSV_HEADER_FIELD, Value]]}: - that's equal default JSON formatter.
 
     # Get request data
     if "address" not in request.data:
         return Response(data={'status': 'error',
-                              'message': "Expect key: 'address' - Address or list of Address or csv file!"},
+                              'message': "Expect key: \"address\" - Address or list of Address or csv file!"},
                         status=status.HTTP_400_BAD_REQUEST)
 
     errors: List[Dict] = []
@@ -88,89 +137,38 @@ def address_post(request):
 @api_view(['POST'])
 @parser_classes([JSONParser])
 def get_clean_address(request):
+    """ Clean address using Dadata.clean.
+        Responses:
+
+    """
     # TODO celery task
-    if 'query' not in request.data:
-        return Response(data={'status': 'error',
-                              'message': "Request must contain task and query strings!"},
-                        status=status.HTTP_400_BAD_REQUEST)
+    try:
+        # TODO before request - check cache and search in DB
+        form = SearchForm(request.data)
+        if form.is_valid():
+            address = DADATA_CLIENT.clean(name="address", source=form.cleaned_data['query'])    # noqa: F821
 
-    if not isinstance(request.data['query'], str):
-        return Response(data={'status': 'error',
-                              'message': f"Expect string, but got {request.data['query']}!",
-                              },
-                        status=status.HTTP_400_BAD_REQUEST)
-
-    if request.data['query'].strip() == '':
-        return Response(data={'status': 'error',
-                              'message': "Expect address but got empty string!",
-                              },
-                        status=status.HTTP_400_BAD_REQUEST)
-
-    # TODO before request - check cache and search in DB
-    # TODO DB search for searching preview on page.
-    address = DADATA_CLIENT.clean(name="address", source=request.data['query'])
-    if 'result' in address:
-        address['address'] = address['result']
-
-    if 'qc' not in address:
-        # TODO for handling API errors need more info!
-        logging.error({'INTEGRATION_ERROR': address})
-        return Response(data={'status': 'error',
-                              'message': 'Geocoding service error!'},
-                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    if address['qc'] == 0 or ((address['qc'] == 3 or address['qc'] == 1) and request.data['force']):
-        # All ok or User apply force for ignore warnings
-        serializer = AddressSerializer(data=address)
-        response_data = None
-        if serializer.is_valid():
-            # Create objects
-            serializer.save()
-            logging.debug({'OBJECT_SAVED': {'type': 'Address',
-                                            'data': serializer.validated_data}})
-            response_data = serializer.validated_data
-            status_code = status.HTTP_201_CREATED
+            force = True if request.data.get('force', 'false') == 'true' else False
+            return Response(**parse_dadata_response(address, force))
         else:
-            logging.debug({"FROM_DADATA_VALIDATION_FAILED": serializer.errors})
+            raise KeyError('Invalid Request Data')
 
-            if serializer.errors:
-                logging.debug({"FROM DADATA VALIDATION FAILED"})
-                response_data = address
-                status_code = status.HTTP_200_OK
-            else:
-                # TODO IMPORTANT handling
-                logging.error({'INTEGRATION_ERROR': {'comment': "get valid response from DaData but data is invalid",
-                                                     'data': address,
-                                                     'errors': serializer.errors},
-                               'tag': 'IMPORTANT'})
-                # ERROR response
-                return Response(data={'status': 'error',
-                                      'message': 'no response from related server'},
-                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        # OK response
-        return Response(data={'status': 'ok',
-                              'address': response_data},
-                        status=status_code)
+    except (KeyError, TypeError, ValueError) as error:
+        logging.info({"WRONG_INPUT": str(error)})
+        # NOTE 400
+        return BadRequestErrorResponse(message="Expect JSON: {\"query\": \"string\"} ")
 
-    elif address['qc'] == 2:
-        return Response(data={'status': 'error',
-                              'message': 'Empty or trash data!'},
-                        status=status.HTTP_400_BAD_REQUEST)
-    elif address['qc'] == 1 or address['qc'] == 3:
-        # TODO cache request
-        logging.warning({'ADDRESS_CLEAN_WARNING': address})
-        return Response(data={'status': 'warning',
-                              'message': 'Request has unused parts or address has alternatives!\n'
-                                         'To ignore this warning use \'"force": True\' option. '})
-    else:
-        # TODO for handling API errors need more info!
-        logging.error({'INTEGRATION_ERROR': {'comment': 'unhandled error from DaData',
-                                             'query': request.data['query'],
-                                             'data': address},
-                       'tag': 'IMPORTANT'})
-        return Response(data={'status': 'error',
-                              'message': 'Geocoding service error!'},
+    except (DadataResponseHandlingError, ResponseEmptyError) as error:
+        # NOTE 500
+        return Response(data={"status": "error",
+                              "message": str(error)},
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    except (RequestEmptyError, ) as error:
+        # NOTE 400
+        return BadRequestErrorResponse(message=str(error))
+    except (RequestNotObviousWarning, ) as warning:
+        return BadRequestErrorResponse(message=str(warning))
 
 
 @api_view(['GET'])

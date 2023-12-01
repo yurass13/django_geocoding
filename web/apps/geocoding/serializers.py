@@ -1,3 +1,4 @@
+"""Geocoding serializers"""
 from rest_framework import serializers
 
 from django.contrib.gis.geos import Point
@@ -6,6 +7,7 @@ from .models import Address
 
 
 class AddressSerializer(serializers.ModelSerializer):
+    """Default Address Serializer"""
     class Meta:
         model = Address
         fields = [

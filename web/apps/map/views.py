@@ -1,5 +1,6 @@
-import requests
+"""Map views"""
 import json
+import requests
 
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
@@ -16,6 +17,8 @@ logging.getLogger(__name__)
 
 
 def maps(request):
+    """Returns Homepage with map and searching form."""
+    # TODO DB search preview on page.
 
     map_config = {}
     if request.method == "POST":
@@ -36,7 +39,7 @@ def maps(request):
                 map_config['target'] = (data['address']['address'],
                                         data['address']['geo_lat'],
                                         data['address']['geo_lon'],
-                                        int(form.cleaned_data['radius'])*1000)
+                                        int(form.cleaned_data['radius']) * 1000)
 
                 # Get Markers
                 # NOTE Not optimal
@@ -46,7 +49,7 @@ def maps(request):
                                       srid=4326)
 
                 address_qs = Address.objects.annotate(distance=Distance('location', current_point)).\
-                    filter(distance__lte=int(form.cleaned_data['radius'])*1000)
+                    filter(distance__lte=int(form.cleaned_data['radius']) * 1000)
                 # TODO Place for serializer?
                 map_config['cities'] = [(city.address, city.geo_lat, city.geo_lon, None)
                                         for city in address_qs]
@@ -66,4 +69,5 @@ def maps(request):
 
 
 def index(request):
+    """Redirect to the views.map()"""
     return redirect("/map/")
