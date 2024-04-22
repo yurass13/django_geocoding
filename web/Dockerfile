@@ -33,7 +33,7 @@ RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requir
 # FINAL #
 #########
 
-FROM python3.10-alpine_python_geos
+FROM python3.10-alpine
 
 RUN mkdir -p /home/app/
 
@@ -41,19 +41,19 @@ RUN addgroup -S app && adduser -S app -G app
 
 ENV HOME=/home/app
 ENV APP_HOME=/home/app/web
-RUN mkdir $APP_HOME
-WORKDIR $APP_HOME
+RUN mkdir "$APP_HOME"
+WORKDIR "$APP_HOME"
 
 COPY --from=builder /usr/src/app/wheels /wheels
 COPY --from=builder /usr/src/app/requirements.txt .
 RUN pip install --no-cache /wheels/*
 
-COPY . $APP_HOME
+COPY . "$APP_HOME"
 
-RUN sed -i 's/\r$//g'  $APP_HOME/entrypoint.sh
-RUN chmod +x $APP_HOME/entrypoint.sh
+RUN sed -i 's/\r$//g'  "$APP_HOME"/entrypoint.sh
+RUN chmod +x "$APP_HOME"/entrypoint.sh
 
-RUN chown -R app:app $APP_HOME
+RUN chown -R app:app "$APP_HOME"
 
 USER app
 
