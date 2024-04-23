@@ -77,4 +77,3 @@ def parse_dadata_response(address, force: bool = False) -> Dict[Union[Literal["d
                                              'data': address},
                        'tag': 'IMPORTANT'})
         raise DadataResponseHandlingError()
-
